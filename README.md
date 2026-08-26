@@ -44,6 +44,28 @@ python run_tracker.py
 | **Run in foreground** | `python run_tracker.py` |
 | **Open Dashboard** | Double-click `start_dashboard.bat` |
 | **Dashboard URL** | http://127.0.0.1:5000 |
+| **Open Desktop App** | Double-click `start_desktop_app.bat` |
+
+## 🖥️ Desktop App
+
+A native Windows desktop application with full management and control:
+
+- **📈 Dashboard** - Real-time stats, activity feed, status indicator
+- **📄 Reports** - Browse and view all reports
+- **📸 Screenshots** - View screenshots with thumbnails
+- **📁 Raw Data** - View complete JSON data
+- **⚙️ Processes** - Live process monitoring
+- **🌐 Network** - Live network connections
+- **📋 Logs** - Real-time log viewer
+- **⚡ Control Center** - Start/stop/restart tracker, generate reports, run cleanup, configure all settings
+
+### Desktop App Features
+
+- **Native Windows UI** - Built with CustomTkinter
+- **Dark Theme** - Modern dark interface
+- **Auto-Refresh** - Updates every 30 seconds
+- **Full Configuration** - All settings configurable from the app
+- **Message Dialogs** - Success/error notifications
 
 ## 📊 Web Dashboard
 

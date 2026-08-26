@@ -4,3 +4,4 @@ pynput>=1.7.6
 psutil>=5.9.8
 Pillow>=10.0.0
 Flask>=2.3.0
+customtkinter>=5.2.0

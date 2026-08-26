@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Tracker Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0f1117;
+            --bg-card: #1a1d27;
+            --bg-hover: #232733;
+            --border: #2a2e3a;
+            --text: #e4e6eb;
+            --text-dim: #8b8f9c;
+            --accent: #4f8cff;
+            --accent-hover: #3a6fd8;
+            --green: #4caf50;
+            --red: #f44336;
+            --yellow: #ffc107;
+            --purple: #9c27b0;
+            --teal: #009688;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0; top: 0; bottom: 0;
+            width: 220px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 20px 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 15px;
+        }
+        .sidebar-header h1 {
+            font-size: 18px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-header p {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            cursor: pointer;
+            color: var(--text-dim);
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+        }
+        .nav-item:hover { background: var(--bg-hover); color: var(--text); }
+        .nav-item.active {
+            background: var(--bg-hover);
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+        .nav-item .icon { font-size: 18px; width: 24px; text-align: center; }
+        .main {
+            margin-left: 220px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .page { display: none; }
+        .page.active { display: block; }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .page-header h2 { font-size: 24px; }
+        .page-header .subtitle { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .card .label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+        .card .value { font-size: 28px; font-weight: 600; margin-top: 8px; }
+        .card .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+        .card .icon { font-size: 24px; margin-bottom: 8px; }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-badge.running { background: rgba(76, 175, 80, 0.15); color: var(--green); }
+        .status-badge.stopped { background: rgba(244, 67, 54, 0.15); color: var(--red); }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-dot.running { background: var(--green); animation: pulse 2s infinite; }
+        .status-dot.stopped { background: var(--red); }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            background: var(--bg-hover);
+            color: var(--text);
+        }
+        .btn:hover { background: var(--border); }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-success { background: var(--green); color: white; }
+        .btn-success:hover { background: #3d8b40; }
+        .btn-danger { background: var(--red); color: white; }
+        .btn-danger:hover { background: #d32f2f; }
+        .btn-warning { background: var(--yellow); color: #333; }
+        .btn-warning:hover { background: #d4a000; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .table th {
+            text-align: left;
+            padding: 10px 12px;
+            color: var(--text-dim);
+            font-weight: 500;
+            border-bottom: 2px solid var(--border);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .table tr:hover { background: var(--bg-hover); }
+        .table .clickable { cursor: pointer; color: var(--accent); }
+        .table .clickable:hover { text-decoration: underline; }
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .panel-header h3 { font-size: 16px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--border);
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle input:checked + .toggle-slider { background: var(--accent); }
+        .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-row .label { font-size: 14px; }
+        .toggle-row .desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+        .log-viewer {
+            background: #0a0c10;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log-line { padding: 2px 0; }
+        .log-line.info { color: #4fc3f7; }
+        .log-line.warning { color: var(--yellow); }
+        .log-line.error { color: var(--red); }
+        .log-line.debug { color: var(--text-dim); }
+        .markdown-viewer {
+            background: #0a0c10;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .markdown-viewer h1 { font-size: 22px; margin-bottom: 10px; color: var(--accent); }
+        .markdown-viewer h2 { font-size: 18px; margin: 20px 0 10px; color: var(--accent); }
+        .markdown-viewer h3 { font-size: 16px; margin: 15px 0 8px; }
+        .markdown-viewer p { margin: 8px 0; }
+        .markdown-viewer ul, .markdown-viewer ol { margin: 8px 0 8px 20px; }
+        .markdown-viewer code {
+            background: var(--bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--teal);
+        }
+        .markdown-viewer pre {
+            background: var(--bg);
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .markdown-viewer pre code { background: none; padding: 0; }
+        .markdown-viewer table {
+            border-collapse: collapse;
+            margin: 10px 0;
+            width: 100%;
+        }
+        .markdown-viewer th, .markdown-viewer td {
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+        .markdown-viewer th { background: var(--bg-hover); }
+        .markdown-viewer blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 10px;
+            color: var(--text-dim);
+            margin: 8px 0;
+        }
+        .markdown-viewer hr { border: none; border-top: 1px solid var(--border); margin: 15px 0; }
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .screenshot-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .screenshot-item:hover { transform: scale(1.02); }
+        .screenshot-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+        }
+        .screenshot-item .info {
+            padding: 10px;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .screenshot-item .info .time { color: var(--text); font-weight: 500; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+            padding: 20px;
+        }
+        .modal-content img { max-width: 100%; max-height: 80vh; }
+        .modal-close {
+            position: absolute;
+            top: 15px; right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-dim);
+            background: none;
+            border: none;
+        }
+        .modal-close:hover { color: var(--text); }
+        .toast {
+            position: fixed;
+            top: 20px; right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            z-index: 2000;
+            display: none;
+            animation: slideIn 0.3s;
+        }
+        .toast.success { background: var(--green); }
+        .toast.error { background: var(--red); }
+        .toast.info { background: var(--accent); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 10px; }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .chart-container { position: relative; height: 200px; }
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 180px;
+            padding: 10px 0;
+        }
+        .bar {
+            flex: 1;
+            background: var(--accent);
+            border-radius: 4px 4px 0 0;
+            min-height: 2px;
+            transition: height 0.3s;
+            position: relative;
+        }
+        .bar:hover { background: var(--accent-hover); }
+        .bar-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+        .bar-value {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: var(--text);
+        }
+        .stat-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            flex: 1;
+            min-width: 150px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .stat-item .label { font-size: 12px; color: var(--text-dim); }
+        .stat-item .value { font-size: 20px; font-weight: 600; margin-top: 5px; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        .search-box {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .search-box:focus { outline: none; border-color: var(--accent); }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-blue { background: rgba(79, 140, 255, 0.15); color: var(--accent); }
+        .badge-green { background: rgba(76, 175, 80, 0.15); color: var(--green); }
+        .badge-red { background: rgba(244, 67, 54, 0.15); color: var(--red); }
+        .badge-yellow { background: rgba(255, 193, 7, 0.15); color: var(--yellow); }
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 60px; }
+            .sidebar-header h1 { font-size: 14px; }
+            .sidebar-header p { display: none; }
+            .nav-item span.text { display: none; }
+            .main { margin-left: 60px; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>📊 Daily Tracker</h1>
+            <p>Management Dashboard</p>
+        </div>
+        <div class="nav-item active" data-page="overview">
+            <span class="icon">📈</span>
+            <span class="text">Overview</span>
+        </div>
+        <div class="nav-item" data-page="reports">
+            <span class="icon">📄</span>
+            <span class="text">Reports</span>
+        </div>
+        <div class="nav-item" data-page="screenshots">
+            <span class="icon">📸</span>
+            <span class="text">Screenshots</span>
+        </div>
+        <div class="nav-item" data-page="raw">
+            <span class="icon">📁</span>
+            <span class="text">Raw Data</span>
+        </div>
+        <div class="nav-item" data-page="processes">
+            <span class="icon">⚙️</span>
+            <span class="text">Processes</span>
+        </div>
+        <div class="nav-item" data-page="network">
+            <span class="icon">🌐</span>
+            <span class="text">Network</span>
+        </div>
+        <div class="nav-item" data-page="logs">
+            <span class="icon">📋</span>
+            <span class="text">Logs</span>
+        </div>
+        <div class="nav-item" data-page="settings">
+            <span class="icon">⚡</span>
+            <span class="text">Control</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+        <!-- Overview Page -->
+        <div class="page active" id="page-overview">
+            <div class="page-header">
+                <div>
+                    <h2>Overview</h2>
+                    <div class="subtitle">Real-time monitoring dashboard</div>
+                </div>
+                <div id="overview-status"></div>
+            </div>
+
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="icon">📄</div>
+                    <div class="label">Total Reports</div>
+                    <div class="value" id="stat-total-reports">-</div>
+                    <div class="sub">All time</div>
+                </div>
+                <div class="card">
+                    <div class="icon">📸</div>
+                    <div class="label">Screenshots</div>
+                    <div class="value" id="stat-total-screenshots">-</div>
+                    <div class="sub">All time</div>
+                </div>
+                <div class="card">
+                    <div class="icon">📅</div>
+                    <div class="label">Today's Reports</div>
+                    <div class="value" id="stat-today-reports">-</div>
+                    <div class="sub">Generated today</div>
+                </div>
+                <div class="card">
+                    <div class="icon">💾</div>
+                    <div class="label">Data Size</div>
+                    <div class="value" id="stat-data-size">-</div>
+                    <div class="sub" id="stat-file-count">-</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Reports Last 7 Days</h3>
+                    </div>
+                    <div class="bar-chart" id="reports-chart"></div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Recent Reports</h3>
+                    </div>
+                    <div id="recent-reports-list"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Recent Screenshots</h3>
+                </div>
+                <div class="screenshot-grid" id="recent-screenshots"></div>
+            </div>
+        </div>
+
+        <!-- Reports Page -->
+        <div class="page" id="page-reports">
+            <div class="page-header">
+                <div>
+                    <h2>Reports</h2>
+                    <div class="subtitle">Generated every 15 minutes</div>
+                </div>
+                <button class="btn btn-primary" onclick="generateReport()">🔄 Generate Now</button>
+            </div>
+            <input type="text" class="search-box" id="reports-search" placeholder="Search reports..." oninput="filterReports()">
+            <div class="panel">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Size</th>
+                            <th>Modified</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reports-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Screenshots Page -->
+        <div class="page" id="page-screenshots">
+            <div class="page-header">
+                <div>
+                    <h2>Screenshots</h2>
+                    <div class="subtitle">Captured every 60 seconds</div>
+                </div>
+            </div>
+            <input type="text" class="search-box" id="screenshots-search" placeholder="Search screenshots..." oninput="filterScreenshots()">
+            <div class="screenshot-grid" id="screenshots-grid"></div>
+        </div>
+
+        <!-- Raw Data Page -->
+        <div class="page" id="page-raw">
+            <div class="page-header">
+                <div>
+                    <h2>Raw Data</h2>
+                    <div class="subtitle">Complete JSON tracking data</div>
+                </div>
+            </div>
+            <div class="panel">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Size</th>
+                            <th>Modified</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="raw-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Processes Page -->
+        <div class="page" id="page-processes">
+            <div class="page-header">
+                <div>
+                    <h2>Running Processes</h2>
+                    <div class="subtitle">Live process monitoring</div>
+                </div>
+                <button class="btn" onclick="loadProcesses()">🔄 Refresh</button>
+            </div>
+            <div class="panel">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>PID</th>
+                            <th>Process</th>
+                            <th>CPU %</th>
+                            <th>Memory %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="processes-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Network Page -->
+        <div class="page" id="page-network">
+            <div class="page-header">
+                <div>
+                    <h2>Network Connections</h2>
+                    <div class="subtitle">Active network activity</div>
+                </div>
+                <button class="btn" onclick="loadNetwork()">🔄 Refresh</button>
+            </div>
+            <div class="panel">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>PID</th>
+                            <th>Local</th>
+                            <th>Remote</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="network-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Logs Page -->
+        <div class="page" id="page-logs">
+            <div class="page-header">
+                <div>
+                    <h2>Logs</h2>
+                    <div class="subtitle">Tracker activity logs</div>
+                </div>
+                <button class="btn" onclick="loadLogs()">🔄 Refresh</button>
+            </div>
+            <div class="log-viewer" id="logs-viewer"></div>
+        </div>
+
+        <!-- Control Page -->
+        <div class="page" id="page-settings">
+            <div class="page-header">
+                <div>
+                    <h2>Control Center</h2>
+                    <div class="subtitle">Full management and configuration</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Tracker Control</h3>
+                    <div id="control-status"></div>
+                </div>
+                <div class="action-bar">
+                    <button class="btn btn-success" onclick="startTracker()">▶️ Start</button>
+                    <button class="btn btn-danger" onclick="stopTracker()">⏹️ Stop</button>
+                    <button class="btn btn-warning" onclick="restartTracker()">🔄 Restart</button>
+                    <button class="btn btn-primary" onclick="generateReport()">📄 Generate Report</button>
+                    <button class="btn" onclick="runCleanup()">🧹 Run Cleanup</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Configuration</h3>
+                    <button class="btn btn-primary" onclick="saveConfig()">💾 Save Config</button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Report Interval (minutes)</label>
+                        <input type="number" id="config-interval" min="1" max="60">
+                    </div>
+                    <div class="form-group">
+                        <label>Screenshot Interval (seconds)</label>
+                        <input type="number" id="config-screenshot-interval" min="5" max="600">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Retention (days)</label>
+                        <input type="number" id="config-retention" min="1" max="365">
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <div class="toggle-row">
+                        <div>
+                            <div class="label">Screenshots</div>
+                            <div class="desc">Capture screen images</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="config-screenshots">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div>
+                            <div class="label">Keyboard Tracking</div>
+                            <div class="desc">Log keystrokes</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="config-keyboard">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div>
+                            <div class="label">Mouse Tracking</div>
+                            <div class="desc">Log mouse activity</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="config-mouse">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div>
+                            <div class="label">Process Monitoring</div>
+                            <div class="desc">Track running processes</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="config-process">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div>
+                            <div class="label">Network Monitoring</div>
+                            <div class="desc">Track network connections</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="config-network">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div>
+                            <div class="label">Window Tracking</div>
+                            <div class="desc">Track active windows</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="config-window">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-content" id="modal-content"></div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ============ Navigation ============
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                const page = item.dataset.page;
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById('page-' + page).classList.add('active');
+                loadPage(page);
+            });
+        });
+
+        // ============ Toast ============
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        // ============ Modal ============
+        function openModal(content) {
+            document.getElementById('modal-content').innerHTML = content;
+            document.getElementById('modal').classList.add('active');
+        }
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modal')) closeModal();
+        });
+
+        // ============ API Helper ============
+        async function api(url, method = 'GET', data = null) {
+            const options = { method, headers: {} };
+            if (data) {
+                options.headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(data);
+            }
+            const response = await fetch(url, options);
+            return response.json();
+        }
+
+        // ============ Page Loading ============
+        function loadPage(page) {
+            switch(page) {
+                case 'overview': loadOverview(); break;
+                case 'reports': loadReports(); break;
+                case 'screenshots': loadScreenshots(); break;
+                case 'raw': loadRawData(); break;
+                case 'processes': loadProcesses(); break;
+                case 'network': loadNetwork(); break;
+                case 'logs': loadLogs(); break;
+                case 'settings': loadSettings(); break;
+            }
+        }
+
+        // ============ Overview ============
+        async function loadOverview() {
+            try {
+                const data = await api('/api/overview');
+                
+                // Status
+                const status = data.status;
+                const statusHtml = status.running 
+                    ? `<span class="status-badge running"><span class="status-dot running"></span> Running</span>`
+                    : `<span class="status-badge stopped"><span class="status-dot stopped"></span> Stopped</span>`;
+                document.getElementById('overview-status').innerHTML = statusHtml;
+                
+                // Stats
+                document.getElementById('stat-total-reports').textContent = data.activity.total_reports;
+                document.getElementById('stat-total-screenshots').textContent = data.activity.total_screenshots;
+                document.getElementById('stat-today-reports').textContent = data.activity.today_reports;
+                document.getElementById('stat-data-size').textContent = data.disk.size_mb + ' MB';
+                document.getElementById('stat-file-count').textContent = data.disk.file_count + ' files';
+                
+                // Chart
+                const chart = document.getElementById('reports-chart');
+                const maxCount = Math.max(...data.daily_reports.map(d => d.count), 1);
+                chart.innerHTML = data.daily_reports.map(d => `
+                    <div class="bar" style="height: ${(d.count / maxCount) * 100}%">
+                        <span class="bar-value">${d.count}</span>
+                        <span class="bar-label">${d.date.slice(5)}</span>
+                    </div>
+                `).join('');
+                
+                // Recent reports
+                const reportsList = document.getElementById('recent-reports-list');
+                if (data.recent_reports.length === 0) {
+                    reportsList.innerHTML = '<div class="empty-state"><div class="icon">📄</div>No reports yet</div>';
+                } else {
+                    reportsList.innerHTML = data.recent_reports.map(r => `
+                        <div class="toggle-row" style="cursor:pointer" onclick="viewReport('${r.name}')">
+                            <div>
+                                <div class="label">${r.date} ${r.time}</div>
+                                <div class="desc">${r.size} bytes</div>
+                            </div>
+                            <span class="badge badge-blue">View</span>
+                        </div>
+                    `).join('');
+                }
+                
+                // Recent screenshots
+                const shotsGrid = document.getElementById('recent-screenshots');
+                if (data.recent_screenshots.length === 0) {
+                    shotsGrid.innerHTML = '<div class="empty-state"><div class="icon">📸</div>No screenshots yet</div>';
+                } else {
+                    shotsGrid.innerHTML = data.recent_screenshots.map(s => `
+                        <div class="screenshot-item" onclick="viewScreenshot('${s.name}')">
+                            <img src="/api/screenshots/${s.name}" alt="${s.name}">
+                            <div class="info">
+                                <div class="time">${s.time}</div>
+                                <div>${s.date}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                showToast('Failed to load overview: ' + e.message, 'error');
+            }
+        }
+
+        // ============ Reports ============
+        let allReports = [];
+        async function loadReports() {
+            try {
+                allReports = await api('/api/reports');
+                renderReports(allReports);
+            } catch (e) {
+                showToast('Failed to load reports: ' + e.message, 'error');
+            }
+        }
+        function renderReports(reports) {
+            const tbody = document.getElementById('reports-table-body');
+            if (reports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No reports generated yet</td></tr>';
+                return;
+            }
+            tbody.innerHTML = reports.map(r => `
+                <tr>
+                    <td>${r.date}</td>
+                    <td>${r.time}</td>
+                    <td>${(r.size / 1024).toFixed(1)} KB</td>
+                    <td>${r.modified}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewReport('${r.name}')">View</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        function filterReports() {
+            const search = document.getElementById('reports-search').value.toLowerCase();
+            const filtered = allReports.filter(r => 
+                r.name.toLowerCase().includes(search) || 
+                r.date.includes(search) || 
+                r.time.includes(search)
+            );
+            renderReports(filtered);
+        }
+        async function viewReport(filename) {
+            try {
+                const data = await api('/api/reports/' + filename);
+                if (data.error) {
+                    showToast(data.error, 'error');
+                    return;
+                }
+                // Simple markdown rendering
+                let html = data.content
+                    .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+                    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+                    .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+                    .replace(/^> (.*)$/gm, '<blockquote>$1</blockquote>')
+                    .replace(/^- (.*)$/gm, '<li>$1</li>')
+                    .replace(/^\| (.*) \|$/gm, (match, content) => {
+                        const cells = content.split('|').map(c => c.trim());
+                        if (cells.every(c => /^[-:]+$/.test(c))) return '<tr style="display:none"></tr>';
+                        return '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+                    })
+                    .replace(/`([^`]+)`/g, '<code>$1</code>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n\n/g, '<br><br>');
+                openModal(`<h3 style="margin-bottom:15px">${filename}</h3><div class="markdown-viewer">${html}</div>`);
+            } catch (e) {
+                showToast('Failed to load report: ' + e.message, 'error');
+            }
+        }
+
+        // ============ Screenshots ============
+        let allScreenshots = [];
+        async function loadScreenshots() {
+            try {
+                allScreenshots = await api('/api/screenshots');
+                renderScreenshots(allScreenshots);
+            } catch (e) {
+                showToast('Failed to load screenshots: ' + e.message, 'error');
+            }
+        }
+        function renderScreenshots(shots) {
+            const grid = document.getElementById('screenshots-grid');
+            if (shots.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><div class="icon">📸</div>No screenshots captured yet</div>';
+                return;
+            }
+            grid.innerHTML = shots.map(s => `
+                <div class="screenshot-item" onclick="viewScreenshot('${s.name}')">
+                    <img src="/api/screenshots/${s.name}" alt="${s.name}">
+                    <div class="info">
+                        <div class="time">${s.time}</div>
+                        <div>${s.date} • ${(s.size / 1024).toFixed(0)} KB</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function filterScreenshots() {
+            const search = document.getElementById('screenshots-search').value.toLowerCase();
+            const filtered = allScreenshots.filter(s => 
+                s.name.toLowerCase().includes(search) || 
+                s.date.includes(search) || 
+                s.time.includes(search)
+            );
+            renderScreenshots(filtered);
+        }
+        function viewScreenshot(filename) {
+            openModal(`<img src="/api/screenshots/${filename}" alt="${filename}">`);
+        }
+
+        // ============ Raw Data ============
+        async function loadRawData() {
+            try {
+                const rawFiles = await api('/api/raw');
+                const tbody = document.getElementById('raw-table-body');
+                if (rawFiles.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No raw data files</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rawFiles.map(f => `
+                    <tr>
+                        <td class="clickable" onclick="viewRawData('${f.name}')">${f.name}</td>
+                        <td>${(f.size / 1024).toFixed(1)} KB</td>
+                        <td>${f.modified}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="viewRawData('${f.name}')">View</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                showToast('Failed to load raw data: ' + e.message, 'error');
+            }
+        }
+        async function viewRawData(filename) {
+            try {
+                const data = await api('/api/raw/' + filename);
+                if (data.error) {
+                    showToast(data.error, 'error');
+                    return;
+                }
+                openModal(`<h3 style="margin-bottom:15px">${filename}</h3><pre style="background:#0a0c10;padding:15px;border-radius:8px;overflow:auto;max-height:70vh;font-size:12px">${JSON.stringify(data, null, 2)}</pre>`);
+            } catch (e) {
+                showToast('Failed to load raw data: ' + e.message, 'error');
+            }
+        }
+
+        // ============ Processes ============
+        async function loadProcesses() {
+            try {
+                const processes = await api('/api/processes');
+                const tbody = document.getElementById('processes-table-body');
+                if (processes.error) {
+                    tbody.innerHTML = `<tr><td colspan="4">${processes.error}</td></tr>`;
+                    return;
+                }
+                if (processes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No processes found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = processes.map(p => `
+                    <tr>
+                        <td>${p.pid}</td>
+                        <td>${p.name}</td>
+                        <td>${p.cpu}%</td>
+                        <td>${p.memory}%</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                showToast('Failed to load processes: ' + e.message, 'error');
+            }
+        }
+
+        // ============ Network ============
+        async function loadNetwork() {
+            try {
+                const connections = await api('/api/network');
+                const tbody = document.getElementById('network-table-body');
+                if (connections.error) {
+                    tbody.innerHTML = `<tr><td colspan="4">${connections.error}</td></tr>`;
+                    return;
+                }
+                if (connections.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No active connections</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = connections.map(c => `
+                    <tr>
+                        <td>${c.pid || '-'}</td>
+                        <td>${c.local}</td>
+                        <td>${c.remote}</td>
+                        <td><span class="badge badge-green">${c.status}</span></td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                showToast('Failed to load network: ' + e.message, 'error');
+            }
+        }
+
+        // ============ Logs ============
+        async function loadLogs() {
+            try {
+                const logs = await api('/api/logs');
+                const viewer = document.getElementById('logs-viewer');
+                if (logs.length === 0) {
+                    viewer.innerHTML = '<div class="empty-state">No logs available</div>';
+                    return;
+                }
+                viewer.innerHTML = logs.map(line => {
+                    const cls = line.includes('ERROR') ? 'error' : 
+                               line.includes('WARNING') ? 'warning' : 
+                               line.includes('DEBUG') ? 'debug' : 'info';
+                    return `<div class="log-line ${cls}">${line.replace(/</g, '<').replace(/>/g, '>')}</div>`;
+                }).join('');
+                viewer.scrollTop = viewer.scrollHeight;
+            } catch (e) {
+                showToast('Failed to load logs: ' + e.message, 'error');
+            }
+        }
+
+        // ============ Settings ============
+        async function loadSettings() {
+            try {
+                const config = await api('/api/config');
+                const status = await api('/api/status');
+                
+                document.getElementById('config-interval').value = config.INTERVAL_MINUTES;
+                document.getElementById('config-screenshot-interval').value = config.SCREENSHOT_INTERVAL_SECONDS;
+                document.getElementById('config-retention').value = config.RETENTION_DAYS;
+                document.getElementById('config-screenshots').checked = config.SCREENSHOT_ENABLED;
+                document.getElementById('config-keyboard').checked = config.KEYBOARD_ENABLED;
+                document.getElementById('config-mouse').checked = config.MOUSE_ENABLED;
+                document.getElementById('config-process').checked = config.PROCESS_ENABLED;
+                document.getElementById('config-network').checked = config.NETWORK_ENABLED;
+                document.getElementById('config-window').checked = config.WINDOW_ENABLED;
+                
+                const statusHtml = status.running 
+                    ? `<span class="status-badge running"><span class="status-dot running"></span> Running</span>`
+                    : `<span class="status-badge stopped"><span class="status-dot stopped"></span> Stopped</span>`;
+                document.getElementById('control-status').innerHTML = statusHtml;
+            } catch (e) {
+                showToast('Failed to load settings: ' + e.message, 'error');
+            }
+        }
+
+        // ============ Actions ============
+        async function startTracker() {
+            try {
+                const result = await api('/api/tracker/start', 'POST');
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    loadSettings();
+                } else {
+                    showToast(result.error, 'error');
+                }
+            } catch (e) {
+                showToast('Failed: ' + e.message, 'error');
+            }
+        }
+        async function stopTracker() {
+            try {
+                const result = await api('/api/tracker/stop', 'POST');
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    loadSettings();
+                } else {
+                    showToast(result.error, 'error');
+                }
+            } catch (e) {
+                showToast('Failed: ' + e.message, 'error');
+            }
+        }
+        async function restartTracker() {
+            try {
+                const result = await api('/api/tracker/restart', 'POST');
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    loadSettings();
+                } else {
+                    showToast(result.error, 'error');
+                }
+            } catch (e) {
+                showToast('Failed: ' + e.message, 'error');
+            }
+        }
+        async function generateReport() {
+            try {
+                const result = await api('/api/tracker/generate-report', 'POST');
+                if (result.success) {
+                    showToast('Report generated successfully', 'success');
+                    loadReports();
+                    loadOverview();
+                } else {
+                    showToast(result.error, 'error');
+                }
+            } catch (e) {
+                showToast('Failed: ' + e.message, 'error');
+            }
+        }
+        async function runCleanup() {
+            try {
+                const result = await api('/api/cleanup', 'POST');
+                if (result.success) {
+                    showToast(`Cleanup complete. Removed ${result.removed} files`, 'success');
+                    loadOverview();
+                } else {
+                    showToast(result.error, 'error');
+                }
+            } catch (e) {
+                showToast('Failed: ' + e.message, 'error');
+            }
+        }
+        async function saveConfig() {
+            try {
+                const data = {
+                    INTERVAL_MINUTES: parseInt(document.getElementById('config-interval').value),
+                    SCREENSHOT_INTERVAL_SECONDS: parseInt(document.getElementById('config-screenshot-interval').value),
+                    RETENTION_DAYS: parseInt(document.getElementById('config-retention').value),
+                    SCREENSHOT_ENABLED: document.getElementById('config-screenshots').checked,
+                    KEYBOARD_ENABLED: document.getElementById('config-keyboard').checked,
+                    MOUSE_ENABLED: document.getElementById('config-mouse').checked,
+                    PROCESS_ENABLED: document.getElementById('config-process').checked,
+                    NETWORK_ENABLED: document.getElementById('config-network').checked,
+                    WINDOW_ENABLED: document.getElementById('config-window').checked,
+                };
+                const result = await api('/api/config', 'POST', data);
+                if (result.success) {
+                    showToast('Configuration saved', 'success');
+                } else {
+                    showToast(result.error, 'error');
+                }
+            } catch (e) {
+                showToast('Failed to save config: ' + e.message, 'error');
+            }
+        }
+
+        // ============ Live Updates ============
+        function setupLiveUpdates() {
+            const eventSource = new EventSource('/api/stream');
+            eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    const status = data.status;
+                    const statusHtml = status.running 
+                        ? `<span class="status-badge running"><span class="status-dot running"></span> Running</span>`
+                        : `<span class="status-badge stopped"><span class="status-dot stopped"></span> Stopped</span>`;
+                    document.getElementById('overview-status').innerHTML = statusHtml;
+                } catch (e) {}
+            };
+        }
+
+        // ============ Init ============
+        loadOverview();
+        setupLiveUpdates();
+        
+        // Auto-refresh processes and network every 30 seconds
+        setInterval(() => {
+            if (document.getElementById('page-processes').classList.contains('active')) loadProcesses();
+            if (document.getElementById('page-network').classList.contains('active')) loadNetwork();
+            if (document.getElementById('page-logs').classList.contains('active')) loadLogs();
+        }, 30000);
+    </script>
+</body>
+</html>

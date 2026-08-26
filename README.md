@@ -13,6 +13,7 @@ A robust, silent background tracker for Windows that monitors your system activi
 - **📄 Detailed Reports** - Generates comprehensive Markdown reports every 15 minutes
 - **🔒 Privacy Protection** - Automatically redacts passwords, tokens, and API keys
 - **🤫 Fully Silent** - Runs with no console window, no tray icon, no notifications
+- **📊 Web Dashboard** - Full management and control panel with live monitoring
 
 ## Installation
 
@@ -41,6 +42,29 @@ python run_tracker.py
 | **Stop tracker** | Double-click `stop_tracker.bat` |
 | **Install at startup** | Double-click `install_startup.bat` |
 | **Run in foreground** | `python run_tracker.py` |
+| **Open Dashboard** | Double-click `start_dashboard.bat` |
+| **Dashboard URL** | http://127.0.0.1:5000 |
+
+## 📊 Web Dashboard
+
+The dashboard provides full management and control:
+
+- **📈 Overview** - Real-time stats, charts, recent activity
+- **📄 Reports** - View all generated reports with markdown rendering
+- **📸 Screenshots** - Browse and view all captured screenshots
+- **📁 Raw Data** - View complete JSON tracking data
+- **⚙️ Processes** - Live process monitoring with CPU/memory
+- **🌐 Network** - Live network connection monitoring
+- **📋 Logs** - Real-time tracker logs
+- **⚡ Control Center** - Start/stop/restart tracker, generate reports, run cleanup, configure all settings
+
+### Dashboard Features
+
+- **Live Updates** - Server-Sent Events for real-time status
+- **Full Configuration** - Change intervals, enable/disable tracking modules
+- **Search & Filter** - Search reports and screenshots
+- **Dark Theme** - Modern dark UI
+- **Responsive** - Works on desktop and mobile
 
 ## Where Are My Reports?
 

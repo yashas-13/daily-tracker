@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "daily-tracker": {
+      "command": "python",
+      "args": ["d:\\Pravidhi\\mykey\\daily-tracker\\run_mcp.py"],
+      "env": {
+        "PYTHONPATH": "d:\\Pravidhi\\mykey\\daily-tracker"
+      }
+    }
+  }
+}

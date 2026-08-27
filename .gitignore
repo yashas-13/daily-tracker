@@ -33,3 +33,9 @@ config.json
 
 # Test artifacts
 *.log
+
+# Leftover command-line output files
+github_output.txt
+github_result.txt
+repo_output.txt
+repo_output2.txt
